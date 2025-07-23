@@ -6,68 +6,110 @@
 import UIKit
 import Nuke
 
-class ViewController: UIViewController, UITableViewDataSource {
+class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
+
 
     @IBOutlet weak var tableView: UITableView!
     
     
-    // Store the posts we fetch
-        var posts: [Post] = []
+    var posts: [Post] = []
 
-        override func viewDidLoad() {
-            super.viewDidLoad()
+       override func viewDidLoad() {
+           super.viewDidLoad()
+           
+           print("✅ ViewController loaded")
+           
+           tableView.dataSource = self
+           tableView.delegate = self
+           tableView.rowHeight = 300
+           fetchPosts()
+       }
 
-            print("✅ ViewController loaded")
+       // MARK: - UITableViewDataSource
 
-            tableView.dataSource = self
-            tableView.rowHeight = 300 // Ensures rows are visible
-            fetchPosts()
-        }
+       func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+           return posts.count
+       }
 
-        // MARK: - UITableViewDataSource
+       func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+           let cell = tableView.dequeueReusableCell(withIdentifier: "PostCell", for: indexPath) as! PostCell
 
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 1
-    }
+           let post = posts[indexPath.row]
+           cell.summaryLabel.text = post.summary
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "PostCell", for: indexPath) as! PostCell
-        cell.summaryLabel.text = "Test Post"
-        cell.postImageView.image = UIImage(systemName: "photo")
-        return cell
-    }
+           if let photo = post.photos.first {
+               Nuke.ImagePipeline.shared.loadImage(with: photo.originalSize.url) { result in
+                   switch result {
+                   case .success(let response):
+                       DispatchQueue.main.async {
+                           cell.postImageView.image = response.image
+                       }
+                   case .failure(let error):
+                       print("Image loading error: \(error)")
+                       DispatchQueue.main.async {
+                           cell.postImageView.image = nil
+                       }
+                   }
+               }
+           } else {
+               cell.postImageView.image = nil
+           }
 
-        // MARK: - Networking
+           return cell
+       }
 
-        func fetchPosts() {
-            let url = URL(string: "https://api.tumblr.com/v2/blog/humansofnewyork/posts/photo?api_key=1zT8CiXGXFcQDyMFG7RtcfGLwTdDjFUJnZzKJaWTmgyK4lKGYk")!
+       // MARK: - UITableViewDelegate
 
-            let task = URLSession.shared.dataTask(with: url) { data, response, error in
-                if let error = error {
-                    print("❌ Network error: \(error.localizedDescription)")
-                    return
-                }
+       func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+           tableView.deselectRow(at: indexPath, animated: true)
+           performSegue(withIdentifier: "showDetail", sender: indexPath)
+       }
 
-                guard let data = data else {
-                    print("❌ No data received")
-                    return
-                }
+       // MARK: - Navigation
 
-                do {
-                    let blog = try JSONDecoder().decode(Blog.self, from: data)
-                    DispatchQueue.main.async {
-                        self.posts = blog.response.posts
-                        self.tableView.reloadData()
-                        print("✅ Loaded \(self.posts.count) posts")
-                    }
-                } catch {
-                    print("❌ JSON decoding error: \(error.localizedDescription)")
-                }
-            }
+       override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+           if segue.identifier == "showDetail",
+              let indexPath = sender as? IndexPath,
+              let detailVC = segue.destination as? DetailViewController {
+               detailVC.post = posts[indexPath.row]
+           }
+       }
 
-            task.resume()
-        }
+       // MARK: - Networking
+
+       func fetchPosts() {
+           let url = URL(string: "https://api.tumblr.com/v2/blog/humansofnewyork/posts/photo?api_key=1zT8CiXGXFcQDyMFG7RtcfGLwTdDjFUJnZzKJaWTmgyK4lKGYk")!
+
+           let task = URLSession.shared.dataTask(with: url) { data, response, error in
+               if let error = error {
+                   print("❌ Network error: \(error.localizedDescription)")
+                   return
+               }
+
+               guard let data = data else {
+                   print("❌ No data received")
+                   return
+               }
+
+               do {
+                   let blog = try JSONDecoder().decode(Blog.self, from: data)
+                   DispatchQueue.main.async {
+                       self.posts = blog.response.posts
+                       self.tableView.reloadData()
+                       print("✅ Loaded \(self.posts.count) posts")
+                   }
+               } catch {
+                   print("❌ JSON decoding error: \(error.localizedDescription)")
+               }
+           }
+
+           task.resume()
+       }
+
+    
+    
+    
 
 
 
