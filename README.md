@@ -1,4 +1,4 @@
-# Project 6 - Tumblr Detail
+# TumblrDetail
 
 Submitted by: Abdulahi Abdi
 
