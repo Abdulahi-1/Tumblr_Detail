@@ -26,7 +26,8 @@ https://www.loom.com/share/bfc0555a17f34ba691613889228c9a53?sid=cfcb3d27-9619-4b
 
 ## Notes
 
-A challenge I have faced was ensuring the Detail View Controller received the correct data and displayed it accurately.
+A challenge I faced was ensuring the Detail View Controller received the correct data and displayed it accurately.  
+I resolved this by carefully setting up the `prepare(for:sender:)` method to pass the selected post’s data to the Detail View Controller and double-checking that the IBOutlets were properly connected to the Storyboard. The outcome was that the correct image and description appeared consistently in the detail view, which improved both the functionality and the user experience of the app.
 
 ## License
 
